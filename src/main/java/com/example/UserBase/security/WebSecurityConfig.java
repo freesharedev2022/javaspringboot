@@ -33,8 +33,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     // Entry points
     http.authorizeRequests()//
         .antMatchers("/api/user/login").permitAll()//
-        .antMatchers("/api/user/signup").permitAll()//
-        .antMatchers("/api/user").permitAll()//
+        .antMatchers("/api/user/signup").permitAll()
         .antMatchers("/api/v1/**").permitAll()
         .antMatchers("/hello").permitAll()
         .anyRequest().authenticated();
@@ -58,11 +57,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers("/configuration/**")//
         .antMatchers("/webjars/**")//
         .antMatchers("/public")
-        
-        // Un-secure H2 Database (for testing purposes, H2 console shouldn't be unprotected in production)
         .and()
         .ignoring()
-        .antMatchers("/h2-console/**/**");;
+        .antMatchers("/h2-console/**/**");
   }
 
   @Bean

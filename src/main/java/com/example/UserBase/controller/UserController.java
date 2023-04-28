@@ -14,7 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.modelmapper.ModelMapper;
 
@@ -24,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("api/user")
 public class UserController {
     @Autowired
     private UserRepository userRepository;
@@ -37,7 +36,7 @@ public class UserController {
     @Autowired
     private Response responseData;
 
-    @GetMapping("/")
+    @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public Map<String, Object> getAllUsers(
             @RequestParam(defaultValue = "1") int page,
@@ -48,7 +47,9 @@ public class UserController {
         Page<User> pageData = userRepository.findAll(PageRequest.of(page-1, size, Sort.by("id").descending()));
         List<User> users = new  ArrayList<>();
         if(pageData.hasContent()){
-            Object result = pageData.getContent();
+           // Object result = pageData.getContent();
+            Object result = pageData.stream()
+                .map((user) -> modelMapper.map(user, UserResponseDTO.class));
             return responseData.responseSuccess(result);
         }
         return responseData.responseSuccess(users);
@@ -83,21 +84,20 @@ public class UserController {
     }
 
     @PostMapping("/login")
-//    @ApiOperation(value = "${UserController.login}")
     @ApiResponses(value = {
             @ApiResponse(code = 400, message = "Something went wrong"), //
-            @ApiResponse(code = 422, message = "Invalid email/password supplied")})
+            @ApiResponse(code = 403, message = "Invalid email/password supplied")
+        })
     public Map<String, Object> login(@ApiParam("Login") @RequestBody LoginDTO user) {
         Object result = userService.signin(user.getEmail(), user.getPassword());
         return responseData.responseSuccess(result);
     }
 
     @PostMapping("/signup")
-//    @ApiOperation(value = "${UserController.signup}")
     @ApiResponses(value = {
             @ApiResponse(code = 400, message = "Something went wrong"),
-            @ApiResponse(code = 403, message = "Access denied"),
-            @ApiResponse(code = 422, message = "Username is already in use")})
+            @ApiResponse(code = 403, message = "Access denied")
+        })
     public Map<String, Object> signup(@ApiParam("Signup User") @RequestBody UserDataDTO user) {
         Object result = userService.signup(modelMapper.map(user, User.class));
         return responseData.responseSuccess(result);
@@ -105,11 +105,9 @@ public class UserController {
 
     @GetMapping(value = "/me")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-//    @ApiOperation(value = "${UserController.me}", response = UserResponseDTO.class, authorizations = { @Authorization(value="apiKey") })
-    @ApiResponses(value = {//
-            @ApiResponse(code = 400, message = "Something went wrong"), //
-            @ApiResponse(code = 403, message = "Access denied"), //
-            @ApiResponse(code = 500, message = "Expired or invalid JWT token")})
+    @ApiResponses(value = {
+            @ApiResponse(code = 400, message = "Something went wrong"),
+            @ApiResponse(code = 403, message = "Access denied")})
     public Map<String, Object> userInfo(HttpServletRequest req) {
         Object result = modelMapper.map(userService.whoami(req), UserResponseDTO.class);
         return responseData.responseSuccess(result);
